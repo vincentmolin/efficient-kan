@@ -1,7 +1,3 @@
-import torch
-import torch.nn.functional as F
-import math
-
 import jax
 import jax.numpy as jnp
 import jax.random as jr
@@ -68,7 +64,7 @@ def curve2coeff(x: jnp.ndarray, y: jnp.ndarray, grid, spline_order):
     return result
 
 
-class JKANLinear(nn.Module):
+class KANLinear(nn.Module):
     out_features: int
     grid_size: int = 5
     spline_order: int = 3
@@ -213,19 +209,7 @@ class JKANLinear(nn.Module):
     #     )
 
 
-# def count_params(tree):
-#     return sum(v.size for v in jax.tree.flatten(tree)[0])
-
-
-# m = JKANLinear(4)
-# ps = m.init(jr.key(0), jnp.ones((2, 3)))
-# ps["params"]
-# ps["batch_stats"]
-# m.apply(ps, jnp.ones((2, 3)), update_grid=True, mutable=["params", "batch_stats"])
-# m.apply(ps, jnp.ones((2, 3)))
-
-
-class JKAN(nn.Module):
+class KAN(nn.Module):
     features: Tuple[int, ...] = (4, 4)
     grid_size: int = 5
     spline_order: int = 3
@@ -239,7 +223,7 @@ class JKAN(nn.Module):
     @nn.compact
     def __call__(self, x, update_grid=False):
         for i, f in enumerate(self.features):
-            x = JKANLinear(
+            x = KANLinear(
                 f,
                 grid_size=self.grid_size,
                 spline_order=self.spline_order,
@@ -256,12 +240,3 @@ class JKAN(nn.Module):
     #         layer.regularization_loss(regularize_activation, regularize_entropy)
     #         for layer in self.layers
     #     )
-
-
-# jk = JKAN(features=(5, 2))
-# ps = jk.init(jr.key(0), jnp.ones((2, 3)))
-
-# jk.apply(ps, jnp.ones((2, 3)))
-# jk.apply(ps, jnp.ones((2, 3)), update_grid=True, mutable=["params", "batch_stats"])
-
-# count_params(ps)
