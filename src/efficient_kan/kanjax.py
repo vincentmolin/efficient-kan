@@ -240,3 +240,52 @@ class KAN(nn.Module):
     #         layer.regularization_loss(regularize_activation, regularize_entropy)
     #         for layer in self.layers
     #     )
+
+
+if __name__ == "__main__":
+    import jax
+    import jax.numpy as jnp
+    import jax.random as jr
+
+    import optax
+
+    from tqdm import tqdm
+
+    kan = KAN([4, 1])
+
+    x = jnp.linspace(-1, 1, 1024).reshape(-1, 1)
+    y = jnp.sin(2 * jnp.pi * x) + 0.051 * jr.normal(jr.key(1), x.shape)
+
+    vars = kan.init(jr.key(0), x)
+
+    print(f"number of parameters: {sum(v.size for v in jax.tree.flatten(vars)[0])}")
+
+    tx = optax.adam(1e-2)
+
+    params = vars["params"]
+    state = vars["batch_stats"]
+    opt_state = tx.init(params)
+
+    def update_step(params, state, opt_state, x, y):
+        def loss_fn(params):
+            y_hat = kan.apply({"params": params, "batch_stats": state}, x)
+            return jnp.mean((y - y_hat) ** 2)
+
+        loss, grad = jax.value_and_grad(loss_fn)(params)
+        updates, opt_state = tx.update(grad, opt_state)
+        new_params = optax.apply_updates(params, updates)
+        return new_params, opt_state, loss
+
+    for i in tqdm(range(100)):
+        params, opt_state, loss = update_step(params, state, opt_state, x, y)
+        print(loss)
+
+    import matplotlib.pyplot as plt
+
+    x_test = jnp.linspace(-1.5, 1.5, 1024).reshape(-1, 1)
+    y_test = kan.apply({"params": params, "batch_stats": state}, x_test)
+    plt.plot(x_test, y_test)
+    plt.scatter(x, y)
+    # pbar.set_postfix(mse_loss=loss.item(), reg_loss=reg_loss.item())
+    # for layer in kan.layers:
+    #     print(layer.spline_weight)
