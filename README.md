@@ -1,4 +1,9 @@
-# An Efficient Implementation of Kolmogorov-Arnold Network
+# JAX/Flax port of [An Efficient Implementation of Kolmogorov-Arnold Network](https://github.com/Blealtan/efficient-kan)
+
+ * [ ] Add regularization
+
+
+(README copied)
 
 This repository contains an efficient implementation of Kolmogorov-Arnold Network (KAN).
 The original implementation of KAN is available [here](https://github.com/KindXiaoming/pykan).
