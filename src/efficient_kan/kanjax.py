@@ -2,6 +2,7 @@ import jax
 import jax.numpy as jnp
 import jax.random as jr
 
+import flax
 import flax.linen as nn
 
 from typing import List, Tuple
@@ -74,6 +75,9 @@ class KANLinear(nn.Module):
     enable_standalone_scale_spline: bool = True
     grid_eps: float = 0.02
     grid_range: Tuple[int, ...] = (-1, 1)
+    activation_fn: flax.typing.Callable = nn.silu
+    base_weight_init: flax.typing.Initializer = nn.initializers.lecun_normal()
+    spline_scale_init: flax.typing.Initializer = nn.initializers.lecun_normal()
 
     @nn.compact
     def __call__(self, x, update_grid=False):
@@ -84,7 +88,7 @@ class KANLinear(nn.Module):
 
         base_weight = self.param(
             "base_weight",
-            nn.initializers.lecun_normal(),
+            self.base_weight_init,
             (x.shape[-1], self.out_features),
         )
 
@@ -97,7 +101,7 @@ class KANLinear(nn.Module):
         if self.enable_standalone_scale_spline:
             spline_scaler = self.param(
                 "spline_scaler",
-                nn.initializers.lecun_normal(),
+                self.spline_scale_init,
                 (self.out_features, in_features),
             )
 
@@ -113,7 +117,7 @@ class KANLinear(nn.Module):
             spline_weight.value = new_spline_weights
 
         base_output = (
-            jax.nn.silu(x)
+            self.activation_fn(x)
             @ base_weight
             # self.base_activation(x) @ base_weight
         )  # F.linear(self.base_activation(x), self.base_weight)
@@ -219,6 +223,9 @@ class KAN(nn.Module):
     enable_standalone_scale_spline: bool = True
     grid_eps: float = 0.02
     grid_range: Tuple[int, ...] = (-1, 1)
+    activation_fn: flax.typing.Callable = nn.silu
+    base_weight_init: flax.typing.Initializer = nn.initializers.lecun_normal()
+    spline_scale_init: flax.typing.Initializer = nn.initializers.lecun_normal()
 
     @nn.compact
     def __call__(self, x, update_grid=False):
@@ -232,6 +239,9 @@ class KAN(nn.Module):
                 scale_spline=self.scale_spline,
                 grid_eps=self.grid_eps,
                 grid_range=self.grid_range,
+                activation_fn=self.activation_fn,
+                base_weight_init=self.base_weight_init,
+                spline_scale_init=self.spline_scale_init,
             )(x, update_grid=update_grid)
         return x
 
